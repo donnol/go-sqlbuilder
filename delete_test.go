@@ -5,6 +5,7 @@ package sqlbuilder
 
 import (
 	"fmt"
+	"testing"
 )
 
 func ExampleDeleteFrom() {
@@ -64,4 +65,31 @@ func ExampleDeleteBuilder_SQL() {
 	// Output:
 	// /* before */ DELETE FROM demo.user PARTITION (p0) WHERE id > ? /* after where */ ORDER BY id /* after order by */ LIMIT 10 /* after limit */
 	// [1234]
+}
+
+func TestDelete(t *testing.T) {
+	{
+		db := NewDeleteBuilder()
+		db.DeleteFrom("demo.user").
+			WhereCondition(ValueFunc(db.Equal), "id", 1234).
+			WhereCondition(ValueFunc(db.Equal), "name", "xx")
+		query, args := db.Build()
+		t.Logf("%s, %+v", query, args)
+	}
+	{
+		db := NewDeleteBuilder()
+		db.DeleteFrom("demo.user").
+			WhereCondition(ValuesFunc(db.In), "id", 1234, 2235).
+			WhereCondition(ValuesFunc(db.In), "age", 12, 22)
+		query, args := db.Build()
+		t.Logf("%s, %+v", query, args)
+	}
+	{
+		db := NewDeleteBuilder()
+		db.DeleteFrom("demo.user").
+			WhereCondition(Func(db.IsNotNull), "id").
+			WhereCondition(Func(db.IsNull), "addr")
+		query, args := db.Build()
+		t.Logf("%s, %+v", query, args)
+	}
 }

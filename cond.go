@@ -3,6 +3,37 @@
 
 package sqlbuilder
 
+type Condition interface {
+	Build(field string, value ...interface{}) string
+}
+
+var (
+	_ Condition = ValueFunc(nil)
+	_ Condition = ValuesFunc(nil)
+	_ Condition = Func(nil)
+)
+
+type (
+	ValueFunc  func(field string, value interface{}) string
+	ValuesFunc func(field string, value ...interface{}) string
+	Func       func(field string) string
+)
+
+func (f ValueFunc) Build(field string, value ...interface{}) string {
+	if len(value) == 0 {
+		return ""
+	}
+	return f(field, value[0])
+}
+
+func (f ValuesFunc) Build(field string, value ...interface{}) string {
+	return f(field, value...)
+}
+
+func (f Func) Build(field string, value ...interface{}) string {
+	return f(field)
+}
+
 // Cond provides several helper methods to build conditions.
 type Cond struct {
 	Args *Args
