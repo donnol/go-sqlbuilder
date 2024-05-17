@@ -46,6 +46,13 @@ func NewCond() *Cond {
 	}
 }
 
+func Equal(field string, value interface{}) string {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" = ")
+	return buf.String()
+}
+
 // Equal represents "field = value".
 func (c *Cond) Equal(field string, value interface{}) string {
 	buf := newStringBuilder()
