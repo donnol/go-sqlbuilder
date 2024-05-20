@@ -15,6 +15,47 @@ func NewCond() *Cond {
 	}
 }
 
+type Condsult interface {
+	Value() interface{}
+	WriteString(ph string)
+	WriteStrings(phs []string, sep string)
+	Cond() string
+}
+
+var _ Condsult = (*condsult)(nil)
+
+type condsult struct {
+	s     *stringBuilder
+	value interface{}
+}
+
+func (cs *condsult) Value() interface{} {
+	return cs.value
+}
+
+func (cs *condsult) WriteString(ph string) {
+	cs.s.WriteString(ph)
+}
+
+func (cs *condsult) WriteStrings(phs []string, sep string) {
+	cs.s.WriteStrings(phs, sep)
+}
+
+func (cs *condsult) Cond() string {
+	return cs.s.String()
+}
+
+// Equal represents "field = value".
+func Equal(field string, value interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" = ")
+	return &condsult{
+		value: value,
+		s:     buf,
+	}
+}
+
 // Equal represents "field = value".
 func (c *Cond) Equal(field string, value interface{}) string {
 	buf := newStringBuilder()
@@ -32,6 +73,17 @@ func (c *Cond) E(field string, value interface{}) string {
 // EQ is an alias of Equal.
 func (c *Cond) EQ(field string, value interface{}) string {
 	return c.Equal(field, value)
+}
+
+// NotEqual represents "field <> value".
+func NotEqual(field string, value interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" <> ")
+	return &condsult{
+		s:     buf,
+		value: value,
+	}
 }
 
 // NotEqual represents "field <> value".
@@ -54,6 +106,17 @@ func (c *Cond) NEQ(field string, value interface{}) string {
 }
 
 // GreaterThan represents "field > value".
+func GreaterThan(field string, value interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" > ")
+	return &condsult{
+		s:     buf,
+		value: value,
+	}
+}
+
+// GreaterThan represents "field > value".
 func (c *Cond) GreaterThan(field string, value interface{}) string {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
@@ -70,6 +133,17 @@ func (c *Cond) G(field string, value interface{}) string {
 // GT is an alias of GreaterThan.
 func (c *Cond) GT(field string, value interface{}) string {
 	return c.GreaterThan(field, value)
+}
+
+// GreaterEqualThan represents "field >= value".
+func GreaterEqualThan(field string, value interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" >= ")
+	return &condsult{
+		s:     buf,
+		value: value,
+	}
 }
 
 // GreaterEqualThan represents "field >= value".
@@ -92,6 +166,17 @@ func (c *Cond) GTE(field string, value interface{}) string {
 }
 
 // LessThan represents "field < value".
+func LessThan(field string, value interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" < ")
+	return &condsult{
+		s:     buf,
+		value: value,
+	}
+}
+
+// LessThan represents "field < value".
 func (c *Cond) LessThan(field string, value interface{}) string {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
@@ -111,6 +196,17 @@ func (c *Cond) LT(field string, value interface{}) string {
 }
 
 // LessEqualThan represents "field <= value".
+func LessEqualThan(field string, value interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" <= ")
+	return &condsult{
+		s:     buf,
+		value: value,
+	}
+}
+
+// LessEqualThan represents "field <= value".
 func (c *Cond) LessEqualThan(field string, value interface{}) string {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
@@ -127,6 +223,39 @@ func (c *Cond) LE(field string, value interface{}) string {
 // LTE is an alias of LessEqualThan.
 func (c *Cond) LTE(field string, value interface{}) string {
 	return c.LessEqualThan(field, value)
+}
+
+type inCondsult struct {
+	s     *stringBuilder
+	value interface{}
+}
+
+func (cs *inCondsult) Value() interface{} {
+	return cs.value
+}
+
+func (cs *inCondsult) WriteString(ph string) {
+	cs.s.WriteString(ph)
+}
+
+func (cs *inCondsult) WriteStrings(phs []string, sep string) {
+	cs.s.WriteStrings(phs, sep)
+	cs.s.WriteString(")")
+}
+
+func (cs *inCondsult) Cond() string {
+	return cs.s.String()
+}
+
+// In represents "field IN (value...)".
+func In(field string, value ...interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" IN (")
+	return &inCondsult{
+		s:     buf,
+		value: value,
+	}
 }
 
 // In represents "field IN (value...)".
@@ -180,11 +309,33 @@ func (c *Cond) NotLike(field string, value interface{}) string {
 }
 
 // IsNull represents "field IS NULL".
+func IsNull(field string) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" IS NULL")
+	return &condsult{
+		s:     buf,
+		value: nil,
+	}
+}
+
+// IsNull represents "field IS NULL".
 func (c *Cond) IsNull(field string) string {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
 	buf.WriteString(" IS NULL")
 	return buf.String()
+}
+
+// IsNotNull represents "field IS NOT NULL".
+func IsNotNull(field string) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" IS NOT NULL")
+	return &condsult{
+		s:     buf,
+		value: nil,
+	}
 }
 
 // IsNotNull represents "field IS NOT NULL".

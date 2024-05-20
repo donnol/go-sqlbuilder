@@ -80,6 +80,35 @@ func (db *DeleteBuilder) Where(andExpr ...string) *DeleteBuilder {
 	return db
 }
 
+func (db *DeleteBuilder) WhereCondsult(sults ...Condsult) *DeleteBuilder {
+	if db.WhereClause == nil {
+		db.WhereClause = NewWhereClause()
+	}
+
+	andExpr := make([]string, 0, len(sults))
+	for _, sult := range sults {
+		if sult.Value() != nil {
+			if values, ok := sult.Value().([]interface{}); ok {
+				phs := make([]string, 0, len(values))
+				for _, value := range values {
+					pl := db.args.Add(value)
+					phs = append(phs, pl)
+				}
+				sult.WriteStrings(phs, ", ")
+			} else {
+				pl := db.args.Add(sult.Value())
+				sult.WriteString(pl)
+			}
+		}
+
+		andExpr = append(andExpr, sult.Cond())
+	}
+
+	db.WhereClause.AddWhereExpr(db.args, andExpr...)
+	db.marker = deleteMarkerAfterWhere
+	return db
+}
+
 // AddWhereClause adds all clauses in the whereClause to SELECT.
 func (db *DeleteBuilder) AddWhereClause(whereClause *WhereClause) *DeleteBuilder {
 	if db.WhereClause == nil {

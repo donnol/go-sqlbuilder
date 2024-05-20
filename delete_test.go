@@ -5,6 +5,9 @@ package sqlbuilder
 
 import (
 	"fmt"
+	"testing"
+
+	"github.com/huandu/go-assert"
 )
 
 func ExampleDeleteFrom() {
@@ -64,4 +67,43 @@ func ExampleDeleteBuilder_SQL() {
 	// Output:
 	// /* before */ DELETE FROM demo.user PARTITION (p0) WHERE id > ? /* after where */ ORDER BY id /* after order by */ LIMIT 10 /* after limit */
 	// [1234]
+}
+
+func TestDelete(t *testing.T) {
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
+			WhereCondsult(Equal("id", 1234)).
+			WhereCondsult(Equal("name", "xx"))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE id = ? AND name = ?")
+		assert.Assert(t, len(args) == 2)
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
+			WhereCondsult(In("id", 1234, 2235)).
+			WhereCondsult(In("age", 12, 22))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE id IN (?, ?) AND age IN (?, ?)")
+		assert.Assert(t, len(args) == 4)
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
+			WhereCondsult(IsNotNull("id")).
+			WhereCondsult(IsNull("addr"))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE id IS NOT NULL AND addr IS NULL")
+		assert.Assert(t, len(args) == 0)
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
+			WhereCondsult(GreaterEqualThan("id", 1)).
+			WhereCondsult(LessThan("id", 10))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE id >= ? AND id < ?")
+		assert.Assert(t, len(args) == 2)
+	}
 }
