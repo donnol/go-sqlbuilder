@@ -5,6 +5,7 @@ package sqlbuilder
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/huandu/go-assert"
@@ -78,6 +79,13 @@ func TestDelete(t *testing.T) {
 		query, args := db.Build()
 		assert.Assert(t, query == "DELETE FROM demo.user WHERE id = ? AND name = ?")
 		assert.Assert(t, len(args) == 2)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.Equal("id", 1234)).
+			Where(db2.Equal("name", "xx")).Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
 	}
 	{
 		db := NewDeleteBuilder().
@@ -87,6 +95,13 @@ func TestDelete(t *testing.T) {
 		query, args := db.Build()
 		assert.Assert(t, query == "DELETE FROM demo.user WHERE id IN (?, ?) AND age IN (?, ?)")
 		assert.Assert(t, len(args) == 4)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.In("id", 1234, 2235)).
+			Where(db2.In("age", 12, 22)).Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
 	}
 	{
 		db := NewDeleteBuilder().
@@ -96,6 +111,13 @@ func TestDelete(t *testing.T) {
 		query, args := db.Build()
 		assert.Assert(t, query == "DELETE FROM demo.user WHERE id NOT IN (?, ?) AND age NOT IN (?, ?)")
 		assert.Assert(t, len(args) == 4)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.NotIn("id", 1234, 2235)).
+			Where(db2.NotIn("age", 12, 22)).Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
 	}
 	{
 		db := NewDeleteBuilder().
@@ -105,6 +127,13 @@ func TestDelete(t *testing.T) {
 		query, args := db.Build()
 		assert.Assert(t, query == "DELETE FROM demo.user WHERE id IS NOT NULL AND addr IS NULL")
 		assert.Assert(t, len(args) == 0)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.IsNotNull("id")).
+			Where(db2.IsNull("addr")).Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
 	}
 	{
 		db := NewDeleteBuilder().
@@ -114,6 +143,13 @@ func TestDelete(t *testing.T) {
 		query, args := db.Build()
 		assert.Assert(t, query == "DELETE FROM demo.user WHERE id >= ? AND id < ?")
 		assert.Assert(t, len(args) == 2)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.GreaterEqualThan("id", 1)).
+			Where(db2.LessThan("id", 10)).Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
 	}
 	{
 		db := NewDeleteBuilder().
@@ -122,6 +158,13 @@ func TestDelete(t *testing.T) {
 		query, args := db.Build()
 		assert.Assert(t, query == "DELETE FROM demo.user WHERE (id = 1 OR id = 2)")
 		assert.Assert(t, len(args) == 0)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.Or("id = 1", "id = 2")).
+			Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
 	}
 	{
 		db := NewDeleteBuilder().
@@ -130,6 +173,13 @@ func TestDelete(t *testing.T) {
 		query, args := db.Build()
 		assert.Assert(t, query == "DELETE FROM demo.user WHERE (id = 1 AND id = 2)")
 		assert.Assert(t, len(args) == 0)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.And("id = 1", "id = 2")).
+			Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
 	}
 	{
 		db := NewDeleteBuilder().
@@ -138,6 +188,13 @@ func TestDelete(t *testing.T) {
 		query, args := db.Build()
 		assert.Assert(t, query == "DELETE FROM demo.user WHERE EXISTS (?)")
 		assert.Assert(t, len(args) == 1)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.Exists("select id from book")).
+			Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
 	}
 	{
 		db := NewDeleteBuilder().
@@ -146,5 +203,12 @@ func TestDelete(t *testing.T) {
 		query, args := db.Build()
 		assert.Assert(t, query == "DELETE FROM demo.user WHERE NOT EXISTS (?)")
 		assert.Assert(t, len(args) == 1)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.NotExists("select id from book")).
+			Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
 	}
 }
