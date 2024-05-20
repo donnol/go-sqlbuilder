@@ -91,6 +91,15 @@ func TestDelete(t *testing.T) {
 	{
 		db := NewDeleteBuilder().
 			DeleteFrom("demo.user").
+			WhereCondsult(NotIn("id", 1234, 2235)).
+			WhereCondsult(NotIn("age", 12, 22))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE id NOT IN (?, ?) AND age NOT IN (?, ?)")
+		assert.Assert(t, len(args) == 4)
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
 			WhereCondsult(IsNotNull("id")).
 			WhereCondsult(IsNull("addr"))
 		query, args := db.Build()
@@ -105,5 +114,37 @@ func TestDelete(t *testing.T) {
 		query, args := db.Build()
 		assert.Assert(t, query == "DELETE FROM demo.user WHERE id >= ? AND id < ?")
 		assert.Assert(t, len(args) == 2)
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
+			WhereCondsult(Or("id = 1", "id = 2"))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE (id = 1 OR id = 2)")
+		assert.Assert(t, len(args) == 0)
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
+			WhereCondsult(And("id = 1", "id = 2"))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE (id = 1 AND id = 2)")
+		assert.Assert(t, len(args) == 0)
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
+			WhereCondsult(Exists("select id from book"))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE EXISTS (?)")
+		assert.Assert(t, len(args) == 1)
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
+			WhereCondsult(NotExists("select id from book"))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE NOT EXISTS (?)")
+		assert.Assert(t, len(args) == 1)
 	}
 }

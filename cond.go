@@ -17,8 +17,9 @@ func NewCond() *Cond {
 
 type Condsult interface {
 	Value() interface{}
-	WriteString(ph string)
-	WriteStrings(phs []string, sep string)
+	WriteBefore()
+	WriteStrings(phs ...string)
+	WriteAfter()
 	Cond() string
 }
 
@@ -33,12 +34,17 @@ func (cs *condsult) Value() interface{} {
 	return cs.value
 }
 
-func (cs *condsult) WriteString(ph string) {
-	cs.s.WriteString(ph)
+func (cs *condsult) WriteBefore() {
 }
 
-func (cs *condsult) WriteStrings(phs []string, sep string) {
-	cs.s.WriteStrings(phs, sep)
+func (cs *condsult) WriteStrings(phs ...string) {
+	if len(phs) == 0 {
+		return
+	}
+	cs.s.WriteString(phs[0])
+}
+
+func (cs *condsult) WriteAfter() {
 }
 
 func (cs *condsult) Cond() string {
@@ -226,6 +232,8 @@ func (c *Cond) LTE(field string, value interface{}) string {
 }
 
 type inCondsult struct {
+	sep string
+
 	s     *stringBuilder
 	value interface{}
 }
@@ -234,12 +242,15 @@ func (cs *inCondsult) Value() interface{} {
 	return cs.value
 }
 
-func (cs *inCondsult) WriteString(ph string) {
-	cs.s.WriteString(ph)
+func (cs *inCondsult) WriteBefore() {
+	cs.s.WriteString("(")
 }
 
-func (cs *inCondsult) WriteStrings(phs []string, sep string) {
-	cs.s.WriteStrings(phs, sep)
+func (cs *inCondsult) WriteStrings(phs ...string) {
+	cs.s.WriteStrings(phs, cs.sep)
+}
+
+func (cs *inCondsult) WriteAfter() {
 	cs.s.WriteString(")")
 }
 
@@ -251,8 +262,10 @@ func (cs *inCondsult) Cond() string {
 func In(field string, value ...interface{}) Condsult {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
-	buf.WriteString(" IN (")
+	buf.WriteString(" IN ")
 	return &inCondsult{
+		sep: ", ",
+
 		s:     buf,
 		value: value,
 	}
@@ -275,6 +288,19 @@ func (c *Cond) In(field string, value ...interface{}) string {
 }
 
 // NotIn represents "field NOT IN (value...)".
+func NotIn(field string, value ...interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" NOT IN ")
+	return &inCondsult{
+		sep: ", ",
+
+		s:     buf,
+		value: value,
+	}
+}
+
+// NotIn represents "field NOT IN (value...)".
 func (c *Cond) NotIn(field string, value ...interface{}) string {
 	vs := make([]string, 0, len(value))
 
@@ -291,12 +317,34 @@ func (c *Cond) NotIn(field string, value ...interface{}) string {
 }
 
 // Like represents "field LIKE value".
+func Like(field string, value interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" LIKE ")
+	return &condsult{
+		s:     buf,
+		value: value,
+	}
+}
+
+// Like represents "field LIKE value".
 func (c *Cond) Like(field string, value interface{}) string {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
 	buf.WriteString(" LIKE ")
 	buf.WriteString(c.Args.Add(value))
 	return buf.String()
+}
+
+// NotLike represents "field NOT LIKE value".
+func NotLike(field string, value interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" NOT LIKE ")
+	return &condsult{
+		s:     buf,
+		value: value,
+	}
 }
 
 // NotLike represents "field NOT LIKE value".
@@ -369,12 +417,36 @@ func (c *Cond) NotBetween(field string, lower, upper interface{}) string {
 }
 
 // Or represents OR logic like "expr1 OR expr2 OR expr3".
+func Or(orExpr ...string) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString("(")
+	buf.WriteStrings(orExpr, " OR ")
+	buf.WriteString(")")
+	return &condsult{
+		s:     buf,
+		value: nil,
+	}
+}
+
+// Or represents OR logic like "expr1 OR expr2 OR expr3".
 func (c *Cond) Or(orExpr ...string) string {
 	buf := newStringBuilder()
 	buf.WriteString("(")
 	buf.WriteStrings(orExpr, " OR ")
 	buf.WriteString(")")
 	return buf.String()
+}
+
+// And represents AND logic like "expr1 AND expr2 AND expr3".
+func And(andExpr ...string) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString("(")
+	buf.WriteStrings(andExpr, " AND ")
+	buf.WriteString(")")
+	return &condsult{
+		s:     buf,
+		value: nil,
+	}
 }
 
 // And represents AND logic like "expr1 AND expr2 AND expr3".
@@ -387,12 +459,34 @@ func (c *Cond) And(andExpr ...string) string {
 }
 
 // Exists represents "EXISTS (subquery)".
+func Exists(subquery interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString("EXISTS ")
+	return &inCondsult{
+		sep:   "",
+		s:     buf,
+		value: subquery,
+	}
+}
+
+// Exists represents "EXISTS (subquery)".
 func (c *Cond) Exists(subquery interface{}) string {
 	buf := newStringBuilder()
 	buf.WriteString("EXISTS (")
 	buf.WriteString(c.Args.Add(subquery))
 	buf.WriteString(")")
 	return buf.String()
+}
+
+// Exists represents "EXISTS (subquery)".
+func NotExists(subquery interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString("NOT EXISTS ")
+	return &inCondsult{
+		sep:   "",
+		s:     buf,
+		value: subquery,
+	}
 }
 
 // NotExists represents "NOT EXISTS (subquery)".

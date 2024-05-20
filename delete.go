@@ -88,17 +88,21 @@ func (db *DeleteBuilder) WhereCondsult(sults ...Condsult) *DeleteBuilder {
 	andExpr := make([]string, 0, len(sults))
 	for _, sult := range sults {
 		if sult.Value() != nil {
+			sult.WriteBefore()
+
 			if values, ok := sult.Value().([]interface{}); ok {
 				phs := make([]string, 0, len(values))
 				for _, value := range values {
 					pl := db.args.Add(value)
 					phs = append(phs, pl)
 				}
-				sult.WriteStrings(phs, ", ")
+				sult.WriteStrings(phs...)
 			} else {
 				pl := db.args.Add(sult.Value())
-				sult.WriteString(pl)
+				sult.WriteStrings(pl)
 			}
+
+			sult.WriteAfter()
 		}
 
 		andExpr = append(andExpr, sult.Cond())
