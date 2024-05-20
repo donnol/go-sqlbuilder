@@ -90,6 +90,21 @@ func TestDelete(t *testing.T) {
 	{
 		db := NewDeleteBuilder().
 			DeleteFrom("demo.user").
+			WhereCondsult(Equal("id", 1234), Equal("name", "xx"))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE id = ? AND name = ?")
+		assert.Assert(t, len(args) == 2)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.Equal("id", 1234)).
+			Where(db2.Equal("name", "xx")).Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
 			WhereCondsult(In("id", 1234, 2235)).
 			WhereCondsult(In("age", 12, 22))
 		query, args := db.Build()
