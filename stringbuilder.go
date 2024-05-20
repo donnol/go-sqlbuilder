@@ -8,6 +8,16 @@ import (
 	"strings"
 )
 
+type StringBuilder interface {
+	WriteLeadingString(s string)
+	WriteString(s string)
+	WriteStrings(ss []string, sep string)
+	WriteRune(r rune)
+	Write(data []byte) (int, error)
+	String() string
+	Reset()
+}
+
 type stringBuilder struct {
 	builder *strings.Builder
 }

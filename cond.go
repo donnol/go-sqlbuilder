@@ -4,7 +4,7 @@
 package sqlbuilder
 
 type Condition interface {
-	Build(field string, value ...interface{}) string
+	Build(field string, value ...interface{}) StringBuilder
 }
 
 var (
@@ -14,23 +14,23 @@ var (
 )
 
 type (
-	ValueFunc  func(field string, value interface{}) string
-	ValuesFunc func(field string, value ...interface{}) string
-	Func       func(field string) string
+	ValueFunc  func(field string, value interface{}) StringBuilder
+	ValuesFunc func(field string, value ...interface{}) StringBuilder
+	Func       func(field string) StringBuilder
 )
 
-func (f ValueFunc) Build(field string, value ...interface{}) string {
+func (f ValueFunc) Build(field string, value ...interface{}) StringBuilder {
 	if len(value) == 0 {
-		return ""
+		return newStringBuilder()
 	}
 	return f(field, value[0])
 }
 
-func (f ValuesFunc) Build(field string, value ...interface{}) string {
+func (f ValuesFunc) Build(field string, value ...interface{}) StringBuilder {
 	return f(field, value...)
 }
 
-func (f Func) Build(field string, value ...interface{}) string {
+func (f Func) Build(field string, value ...interface{}) StringBuilder {
 	return f(field)
 }
 
@@ -46,11 +46,11 @@ func NewCond() *Cond {
 	}
 }
 
-func Equal(field string, value interface{}) string {
+func Equal(field string, value interface{}) StringBuilder {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
 	buf.WriteString(" = ")
-	return buf.String()
+	return buf
 }
 
 // Equal represents "field = value".
@@ -73,6 +73,14 @@ func (c *Cond) EQ(field string, value interface{}) string {
 }
 
 // NotEqual represents "field <> value".
+func NotEqual(field string, value interface{}) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" <> ")
+	return buf
+}
+
+// NotEqual represents "field <> value".
 func (c *Cond) NotEqual(field string, value interface{}) string {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
@@ -89,6 +97,14 @@ func (c *Cond) NE(field string, value interface{}) string {
 // NEQ is an alias of NotEqual.
 func (c *Cond) NEQ(field string, value interface{}) string {
 	return c.NotEqual(field, value)
+}
+
+// GreaterThan represents "field > value".
+func GreaterThan(field string, value interface{}) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" > ")
+	return buf
 }
 
 // GreaterThan represents "field > value".
@@ -111,6 +127,14 @@ func (c *Cond) GT(field string, value interface{}) string {
 }
 
 // GreaterEqualThan represents "field >= value".
+func GreaterEqualThan(field string, value interface{}) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" >= ")
+	return buf
+}
+
+// GreaterEqualThan represents "field >= value".
 func (c *Cond) GreaterEqualThan(field string, value interface{}) string {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
@@ -127,6 +151,14 @@ func (c *Cond) GE(field string, value interface{}) string {
 // GTE is an alias of GreaterEqualThan.
 func (c *Cond) GTE(field string, value interface{}) string {
 	return c.GreaterEqualThan(field, value)
+}
+
+// LessThan represents "field < value".
+func LessThan(field string, value interface{}) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" < ")
+	return buf
 }
 
 // LessThan represents "field < value".
@@ -149,6 +181,14 @@ func (c *Cond) LT(field string, value interface{}) string {
 }
 
 // LessEqualThan represents "field <= value".
+func LessEqualThan(field string, value interface{}) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" <= ")
+	return buf
+}
+
+// LessEqualThan represents "field <= value".
 func (c *Cond) LessEqualThan(field string, value interface{}) string {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
@@ -168,6 +208,14 @@ func (c *Cond) LTE(field string, value interface{}) string {
 }
 
 // In represents "field IN (value...)".
+func In(field string, value ...interface{}) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" IN ")
+	return buf
+}
+
+// In represents "field IN (value...)".
 func (c *Cond) In(field string, value ...interface{}) string {
 	vs := make([]string, 0, len(value))
 
@@ -181,6 +229,14 @@ func (c *Cond) In(field string, value ...interface{}) string {
 	buf.WriteStrings(vs, ", ")
 	buf.WriteString(")")
 	return buf.String()
+}
+
+// NotIn represents "field NOT IN (value...)".
+func NotIn(field string, value ...interface{}) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" NOT IN ")
+	return buf
 }
 
 // NotIn represents "field NOT IN (value...)".
@@ -200,12 +256,28 @@ func (c *Cond) NotIn(field string, value ...interface{}) string {
 }
 
 // Like represents "field LIKE value".
+func Like(field string, value interface{}) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" LIKE ")
+	return buf
+}
+
+// Like represents "field LIKE value".
 func (c *Cond) Like(field string, value interface{}) string {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
 	buf.WriteString(" LIKE ")
 	buf.WriteString(c.Args.Add(value))
 	return buf.String()
+}
+
+// NotLike represents "field NOT LIKE value".
+func NotLike(field string, value interface{}) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" NOT LIKE ")
+	return buf
 }
 
 // NotLike represents "field NOT LIKE value".
@@ -218,11 +290,27 @@ func (c *Cond) NotLike(field string, value interface{}) string {
 }
 
 // IsNull represents "field IS NULL".
+func IsNull(field string) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" IS NULL")
+	return buf
+}
+
+// IsNull represents "field IS NULL".
 func (c *Cond) IsNull(field string) string {
 	buf := newStringBuilder()
 	buf.WriteString(Escape(field))
 	buf.WriteString(" IS NULL")
 	return buf.String()
+}
+
+// IsNotNull represents "field IS NOT NULL".
+func IsNotNull(field string) StringBuilder {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" IS NOT NULL")
+	return buf
 }
 
 // IsNotNull represents "field IS NOT NULL".

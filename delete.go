@@ -5,7 +5,6 @@ package sqlbuilder
 
 import (
 	"strconv"
-	"strings"
 )
 
 const (
@@ -91,7 +90,14 @@ func (db *DeleteBuilder) WhereCondition(cond Condition, field string, value ...i
 	for _, v := range value {
 		pl = append(pl, db.args.Add(v))
 	}
-	db.WhereClause.AddWhereExpr(db.args, andExpr+strings.Join(pl, ","))
+	if len(value) > 1 {
+		andExpr.WriteString("(")
+	}
+	andExpr.WriteStrings(pl, ", ")
+	if len(value) > 1 {
+		andExpr.WriteString(")")
+	}
+	db.WhereClause.AddWhereExpr(db.args, andExpr.String())
 	db.marker = deleteMarkerAfterWhere
 	return db
 }
