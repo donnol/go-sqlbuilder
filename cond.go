@@ -16,6 +16,7 @@ func NewCond() *Cond {
 }
 
 type Condsult interface {
+	Init(s StringBuilder)
 	Value() interface{}
 	WriteBefore()
 	WriteString(index int, ph string)
@@ -26,8 +27,14 @@ type Condsult interface {
 var _ Condsult = (*condsult)(nil)
 
 type condsult struct {
-	s     *stringBuilder
+	s     StringBuilder
+	field string
+	op    string
 	value interface{}
+}
+
+func (cs *condsult) Init(s StringBuilder) {
+	cs.s = s
 }
 
 func (cs *condsult) Value() interface{} {
@@ -35,6 +42,8 @@ func (cs *condsult) Value() interface{} {
 }
 
 func (cs *condsult) WriteBefore() {
+	cs.s.WriteString(cs.field)
+	cs.s.WriteString(cs.op)
 }
 
 func (cs *condsult) WriteString(index int, ph string) {
@@ -50,12 +59,10 @@ func (cs *condsult) Cond() string {
 
 // Equal represents "field = value".
 func Equal(field string, value interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" = ")
 	return &condsult{
+		field: Escape(field),
+		op:    " = ",
 		value: value,
-		s:     buf,
 	}
 }
 
@@ -80,11 +87,9 @@ func (c *Cond) EQ(field string, value interface{}) string {
 
 // NotEqual represents "field <> value".
 func NotEqual(field string, value interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" <> ")
 	return &condsult{
-		s:     buf,
+		field: Escape(field),
+		op:    " <> ",
 		value: value,
 	}
 }
@@ -110,11 +115,9 @@ func (c *Cond) NEQ(field string, value interface{}) string {
 
 // GreaterThan represents "field > value".
 func GreaterThan(field string, value interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" > ")
 	return &condsult{
-		s:     buf,
+		field: Escape(field),
+		op:    " > ",
 		value: value,
 	}
 }
@@ -140,11 +143,9 @@ func (c *Cond) GT(field string, value interface{}) string {
 
 // GreaterEqualThan represents "field >= value".
 func GreaterEqualThan(field string, value interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" >= ")
 	return &condsult{
-		s:     buf,
+		field: Escape(field),
+		op:    " >= ",
 		value: value,
 	}
 }
@@ -170,11 +171,9 @@ func (c *Cond) GTE(field string, value interface{}) string {
 
 // LessThan represents "field < value".
 func LessThan(field string, value interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" < ")
 	return &condsult{
-		s:     buf,
+		field: Escape(field),
+		op:    " < ",
 		value: value,
 	}
 }
@@ -200,11 +199,9 @@ func (c *Cond) LT(field string, value interface{}) string {
 
 // LessEqualThan represents "field <= value".
 func LessEqualThan(field string, value interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" <= ")
 	return &condsult{
-		s:     buf,
+		field: Escape(field),
+		op:    " <= ",
 		value: value,
 	}
 }
@@ -231,8 +228,11 @@ func (c *Cond) LTE(field string, value interface{}) string {
 type inCondsult struct {
 	sep string
 
-	s     *stringBuilder
-	value interface{}
+	condsult
+}
+
+func (cs *inCondsult) Init(s StringBuilder) {
+	cs.s = s
 }
 
 func (cs *inCondsult) Value() interface{} {
@@ -240,6 +240,8 @@ func (cs *inCondsult) Value() interface{} {
 }
 
 func (cs *inCondsult) WriteBefore() {
+	cs.s.WriteString(cs.field)
+	cs.s.WriteString(cs.op)
 	cs.s.WriteString("(")
 }
 
@@ -260,14 +262,14 @@ func (cs *inCondsult) Cond() string {
 
 // In represents "field IN (value...)".
 func In(field string, value ...interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" IN ")
 	return &inCondsult{
 		sep: ", ",
 
-		s:     buf,
-		value: value,
+		condsult: condsult{
+			field: Escape(field),
+			op:    " IN ",
+			value: value,
+		},
 	}
 }
 
@@ -289,14 +291,14 @@ func (c *Cond) In(field string, value ...interface{}) string {
 
 // NotIn represents "field NOT IN (value...)".
 func NotIn(field string, value ...interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" NOT IN ")
 	return &inCondsult{
 		sep: ", ",
 
-		s:     buf,
-		value: value,
+		condsult: condsult{
+			field: Escape(field),
+			op:    " NOT IN ",
+			value: value,
+		},
 	}
 }
 
@@ -318,11 +320,9 @@ func (c *Cond) NotIn(field string, value ...interface{}) string {
 
 // Like represents "field LIKE value".
 func Like(field string, value interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" LIKE ")
 	return &condsult{
-		s:     buf,
+		field: Escape(field),
+		op:    " LIKE ",
 		value: value,
 	}
 }
@@ -338,11 +338,9 @@ func (c *Cond) Like(field string, value interface{}) string {
 
 // NotLike represents "field NOT LIKE value".
 func NotLike(field string, value interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" NOT LIKE ")
 	return &condsult{
-		s:     buf,
+		field: Escape(field),
+		op:    " NOT LIKE ",
 		value: value,
 	}
 }
@@ -356,14 +354,41 @@ func (c *Cond) NotLike(field string, value interface{}) string {
 	return buf.String()
 }
 
+type isCondsult struct {
+	condsult
+}
+
+func (cs *isCondsult) Init(s StringBuilder) {
+	cs.s = s
+}
+
+func (cs *isCondsult) Value() interface{} {
+	return cs.value
+}
+
+func (cs *isCondsult) WriteBefore() {
+	cs.s.WriteString(cs.field)
+	cs.s.WriteString(cs.op)
+}
+
+func (cs *isCondsult) WriteString(index int, ph string) {
+}
+
+func (cs *isCondsult) WriteAfter() {
+}
+
+func (cs *isCondsult) Cond() string {
+	return cs.s.String()
+}
+
 // IsNull represents "field IS NULL".
 func IsNull(field string) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" IS NULL")
-	return &condsult{
-		s:     buf,
-		value: nil,
+	return &isCondsult{
+		condsult: condsult{
+			field: Escape(field),
+			op:    " IS NULL",
+			value: nil,
+		},
 	}
 }
 
@@ -377,12 +402,12 @@ func (c *Cond) IsNull(field string) string {
 
 // IsNotNull represents "field IS NOT NULL".
 func IsNotNull(field string) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" IS NOT NULL")
-	return &condsult{
-		s:     buf,
-		value: nil,
+	return &isCondsult{
+		condsult: condsult{
+			field: Escape(field),
+			op:    " IS NOT NULL",
+			value: nil,
+		},
 	}
 }
 
@@ -395,8 +420,11 @@ func (c *Cond) IsNotNull(field string) string {
 }
 
 type betCondsult struct {
-	s     *stringBuilder
-	value interface{}
+	condsult
+}
+
+func (cs *betCondsult) Init(s StringBuilder) {
+	cs.s = s
 }
 
 func (cs *betCondsult) Value() interface{} {
@@ -404,6 +432,8 @@ func (cs *betCondsult) Value() interface{} {
 }
 
 func (cs *betCondsult) WriteBefore() {
+	cs.s.WriteString(cs.field)
+	cs.s.WriteString(cs.op)
 }
 
 func (cs *betCondsult) WriteString(index int, ph string) {
@@ -422,12 +452,12 @@ func (cs *betCondsult) Cond() string {
 
 // Between represents "field BETWEEN lower AND upper".
 func Between(field string, lower, upper interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" BETWEEN ")
 	return &betCondsult{
-		s:     buf,
-		value: []interface{}{lower, upper},
+		condsult: condsult{
+			field: Escape(field),
+			op:    " BETWEEN ",
+			value: []interface{}{lower, upper},
+		},
 	}
 }
 
@@ -444,12 +474,12 @@ func (c *Cond) Between(field string, lower, upper interface{}) string {
 
 // NotBetween represents "field NOT BETWEEN lower AND upper".
 func NotBetween(field string, lower, upper interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString(Escape(field))
-	buf.WriteString(" NOT BETWEEN ")
 	return &betCondsult{
-		s:     buf,
-		value: []interface{}{lower, upper},
+		condsult: condsult{
+			field: Escape(field),
+			op:    " NOT BETWEEN ",
+			value: []interface{}{lower, upper},
+		},
 	}
 }
 
@@ -464,15 +494,42 @@ func (c *Cond) NotBetween(field string, lower, upper interface{}) string {
 	return buf.String()
 }
 
+type andOrCondsult struct {
+	expr []string
+	condsult
+}
+
+func (cs *andOrCondsult) Init(s StringBuilder) {
+	cs.s = s
+}
+
+func (cs *andOrCondsult) Value() interface{} {
+	return cs.value
+}
+
+func (cs *andOrCondsult) WriteBefore() {
+	cs.s.WriteString("(")
+	cs.s.WriteStrings(cs.expr, cs.op)
+}
+
+func (cs *andOrCondsult) WriteString(index int, ph string) {
+}
+
+func (cs *andOrCondsult) WriteAfter() {
+	cs.s.WriteString(")")
+}
+
+func (cs *andOrCondsult) Cond() string {
+	return cs.s.String()
+}
+
 // Or represents OR logic like "expr1 OR expr2 OR expr3".
 func Or(orExpr ...string) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString("(")
-	buf.WriteStrings(orExpr, " OR ")
-	buf.WriteString(")")
-	return &condsult{
-		s:     buf,
-		value: nil,
+	return &andOrCondsult{
+		expr: orExpr,
+		condsult: condsult{
+			op: " OR ",
+		},
 	}
 }
 
@@ -487,13 +544,11 @@ func (c *Cond) Or(orExpr ...string) string {
 
 // And represents AND logic like "expr1 AND expr2 AND expr3".
 func And(andExpr ...string) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString("(")
-	buf.WriteStrings(andExpr, " AND ")
-	buf.WriteString(")")
-	return &condsult{
-		s:     buf,
-		value: nil,
+	return &andOrCondsult{
+		expr: andExpr,
+		condsult: condsult{
+			op: " AND ",
+		},
 	}
 }
 
@@ -508,12 +563,12 @@ func (c *Cond) And(andExpr ...string) string {
 
 // Exists represents "EXISTS (subquery)".
 func Exists(subquery interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString("EXISTS ")
 	return &inCondsult{
-		sep:   "",
-		s:     buf,
-		value: subquery,
+		sep: "",
+		condsult: condsult{
+			op:    "EXISTS ",
+			value: subquery,
+		},
 	}
 }
 
@@ -528,12 +583,12 @@ func (c *Cond) Exists(subquery interface{}) string {
 
 // Exists represents "EXISTS (subquery)".
 func NotExists(subquery interface{}) Condsult {
-	buf := newStringBuilder()
-	buf.WriteString("NOT EXISTS ")
 	return &inCondsult{
-		sep:   "",
-		s:     buf,
-		value: subquery,
+		sep: "",
+		condsult: condsult{
+			op:    "NOT EXISTS ",
+			value: subquery,
+		},
 	}
 }
 

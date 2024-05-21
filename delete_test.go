@@ -259,3 +259,26 @@ func TestDelete(t *testing.T) {
 		assert.Assert(t, reflect.DeepEqual(args, args2))
 	}
 }
+
+func BenchmarkDelete(b *testing.B) {
+	b.Run("origin", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			db2 := NewDeleteBuilder()
+			db2.DeleteFrom("demo.user").
+				Where(db2.Equal("id", 1)).
+				Where(db2.In("id", 1, 2, 3)).
+				Where(db2.NotExists("select id from book")).
+				Build()
+		}
+	})
+	b.Run("consult", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			NewDeleteBuilder().
+				DeleteFrom("demo.user").
+				WhereCondsult(Equal("id", 1)).
+				WhereCondsult(In("id", 1, 2, 3)).
+				WhereCondsult(NotExists("select id from book")).
+				Build()
+		}
+	})
+}

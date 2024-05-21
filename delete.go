@@ -85,11 +85,13 @@ func (db *DeleteBuilder) WhereCondsult(sults ...Condsult) *DeleteBuilder {
 		db.WhereClause = NewWhereClause()
 	}
 
+	builder := newStringBuilder()
 	andExpr := make([]string, 0, len(sults))
 	for _, sult := range sults {
-		if sult.Value() != nil {
-			sult.WriteBefore()
+		sult.Init(builder)
 
+		sult.WriteBefore()
+		if sult.Value() != nil {
 			if values, ok := sult.Value().([]interface{}); ok {
 				for i, value := range values {
 					pl := db.args.Add(value)
@@ -99,11 +101,12 @@ func (db *DeleteBuilder) WhereCondsult(sults ...Condsult) *DeleteBuilder {
 				pl := db.args.Add(sult.Value())
 				sult.WriteString(0, pl)
 			}
-
-			sult.WriteAfter()
 		}
+		sult.WriteAfter()
 
 		andExpr = append(andExpr, sult.Cond())
+
+		builder.Reset()
 	}
 
 	db.WhereClause.AddWhereExpr(db.args, andExpr...)
