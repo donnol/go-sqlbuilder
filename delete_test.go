@@ -271,6 +271,14 @@ func BenchmarkDelete(b *testing.B) {
 				Build()
 		}
 	})
+	b.Run("origin-one", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			db2 := NewDeleteBuilder()
+			db2.DeleteFrom("demo.user").
+				Where(db2.Equal("id", 1), db2.In("id", 1, 2, 3), db2.NotExists("select id from book")).
+				Build()
+		}
+	})
 	b.Run("consult-many", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			NewDeleteBuilder().
