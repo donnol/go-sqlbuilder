@@ -137,6 +137,38 @@ func TestDelete(t *testing.T) {
 	{
 		db := NewDeleteBuilder().
 			DeleteFrom("demo.user").
+			WhereCondsult(Between("id", 1234, 2235)).
+			WhereCondsult(Between("age", 12, 22))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE id BETWEEN ? AND ? AND age BETWEEN ? AND ?")
+		assert.Assert(t, len(args) == 4)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.Between("id", 1234, 2235)).
+			Where(db2.Between("age", 12, 22)).Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
+			WhereCondsult(NotBetween("id", 1234, 2235)).
+			WhereCondsult(NotBetween("age", 12, 22))
+		query, args := db.Build()
+		assert.Assert(t, query == "DELETE FROM demo.user WHERE id NOT BETWEEN ? AND ? AND age NOT BETWEEN ? AND ?")
+		assert.Assert(t, len(args) == 4)
+
+		db2 := NewDeleteBuilder()
+		query2, args2 := db2.DeleteFrom("demo.user").
+			Where(db2.NotBetween("id", 1234, 2235)).
+			Where(db2.NotBetween("age", 12, 22)).Build()
+		assert.Assert(t, query == query2)
+		assert.Assert(t, reflect.DeepEqual(args, args2))
+	}
+	{
+		db := NewDeleteBuilder().
+			DeleteFrom("demo.user").
 			WhereCondsult(IsNotNull("id")).
 			WhereCondsult(IsNull("addr"))
 		query, args := db.Build()

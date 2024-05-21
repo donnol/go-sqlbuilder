@@ -18,7 +18,7 @@ func NewCond() *Cond {
 type Condsult interface {
 	Value() interface{}
 	WriteBefore()
-	WriteStrings(phs ...string)
+	WriteString(index int, ph string)
 	WriteAfter()
 	Cond() string
 }
@@ -37,11 +37,8 @@ func (cs *condsult) Value() interface{} {
 func (cs *condsult) WriteBefore() {
 }
 
-func (cs *condsult) WriteStrings(phs ...string) {
-	if len(phs) == 0 {
-		return
-	}
-	cs.s.WriteString(phs[0])
+func (cs *condsult) WriteString(index int, ph string) {
+	cs.s.WriteString(ph)
 }
 
 func (cs *condsult) WriteAfter() {
@@ -246,8 +243,11 @@ func (cs *inCondsult) WriteBefore() {
 	cs.s.WriteString("(")
 }
 
-func (cs *inCondsult) WriteStrings(phs ...string) {
-	cs.s.WriteStrings(phs, cs.sep)
+func (cs *inCondsult) WriteString(index int, ph string) {
+	if index != 0 {
+		cs.s.WriteString(cs.sep)
+	}
+	cs.s.WriteString(ph)
 }
 
 func (cs *inCondsult) WriteAfter() {
@@ -394,6 +394,43 @@ func (c *Cond) IsNotNull(field string) string {
 	return buf.String()
 }
 
+type betCondsult struct {
+	s     *stringBuilder
+	value interface{}
+}
+
+func (cs *betCondsult) Value() interface{} {
+	return cs.value
+}
+
+func (cs *betCondsult) WriteBefore() {
+}
+
+func (cs *betCondsult) WriteString(index int, ph string) {
+	if index == 1 {
+		cs.s.WriteString(" AND ")
+	}
+	cs.s.WriteString(ph)
+}
+
+func (cs *betCondsult) WriteAfter() {
+}
+
+func (cs *betCondsult) Cond() string {
+	return cs.s.String()
+}
+
+// Between represents "field BETWEEN lower AND upper".
+func Between(field string, lower, upper interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" BETWEEN ")
+	return &betCondsult{
+		s:     buf,
+		value: []interface{}{lower, upper},
+	}
+}
+
 // Between represents "field BETWEEN lower AND upper".
 func (c *Cond) Between(field string, lower, upper interface{}) string {
 	buf := newStringBuilder()
@@ -403,6 +440,17 @@ func (c *Cond) Between(field string, lower, upper interface{}) string {
 	buf.WriteString(" AND ")
 	buf.WriteString(c.Args.Add(upper))
 	return buf.String()
+}
+
+// NotBetween represents "field NOT BETWEEN lower AND upper".
+func NotBetween(field string, lower, upper interface{}) Condsult {
+	buf := newStringBuilder()
+	buf.WriteString(Escape(field))
+	buf.WriteString(" NOT BETWEEN ")
+	return &betCondsult{
+		s:     buf,
+		value: []interface{}{lower, upper},
+	}
 }
 
 // NotBetween represents "field NOT BETWEEN lower AND upper".
